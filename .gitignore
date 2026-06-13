@@ -1,9 +1,7 @@
-node_modules/
-main.js
-main.js.map
 data/.apkg-tmp/
 data/.systran-example-cache.json
 data/.systran-browser-profile/
-audio/generated/
 *.log
 scripts/* copy.py
+docs/superpowers/*
+scripts/systran-translate-examples.py copy.py
