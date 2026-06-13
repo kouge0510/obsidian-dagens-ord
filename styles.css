@@ -1,0 +1,311 @@
+/* Dagens Ord — dark theme card UI */
+
+.dagens-ord-container {
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	padding: 24px 16px;
+	min-height: 100%;
+	background: var(--background-primary);
+}
+
+.dagens-ord-card {
+	display: flex;
+	flex-direction: column;
+	width: min(520px, 100%);
+	height: 360px;
+	padding: 28px 28px 20px;
+	box-sizing: border-box;
+	border-radius: 20px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+	overflow: hidden;
+}
+
+.do-card-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	scrollbar-gutter: stable;
+}
+
+.do-card-scroll::-webkit-scrollbar {
+	width: 6px;
+}
+
+.do-card-scroll::-webkit-scrollbar-thumb {
+	border-radius: 999px;
+	background: var(--background-modifier-border);
+}
+
+/* Header */
+.do-header {
+	flex-shrink: 0;
+	margin-bottom: 16px;
+}
+
+.do-title-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.do-flag {
+	width: 36px;
+	height: 36px;
+	border-radius: 8px;
+	flex-shrink: 0;
+	background: linear-gradient(
+		to bottom,
+		#c8102e 0%,
+		#c8102e 33.3%,
+		#fff 33.3%,
+		#fff 66.6%,
+		#c8102e 66.6%,
+		#c8102e 100%
+	);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.do-title-block h2 {
+	margin: 0;
+	font-size: 1.15em;
+	font-weight: 600;
+	color: var(--text-normal);
+	letter-spacing: 0.01em;
+}
+
+.do-meta {
+	margin-top: 4px;
+	font-size: 0.82em;
+	color: var(--text-muted);
+}
+
+/* Word */
+.do-word-section {
+	margin-bottom: 20px;
+}
+
+.do-word-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.do-word {
+	margin: 0;
+	font-size: 2.8em;
+	font-weight: 700;
+	color: var(--text-normal);
+	line-height: 1.1;
+}
+
+.do-play-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-modifier-hover);
+	color: var(--text-accent);
+	cursor: pointer;
+	transition: background 0.15s, transform 0.1s;
+	flex-shrink: 0;
+}
+
+.do-play-btn:hover {
+	background: var(--background-modifier-border-hover);
+	transform: scale(1.05);
+}
+
+.do-speed-btn {
+	height: 32px;
+	padding: 0 10px;
+	border-radius: 16px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-muted);
+	font-size: 0.8em;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s, border-color 0.15s;
+	flex-shrink: 0;
+}
+
+.do-speed-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	border-color: var(--background-modifier-border-hover);
+}
+
+.do-ipa {
+	margin: 6px 0 4px;
+	font-size: 0.95em;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.do-translation {
+	margin: 0;
+	font-size: 1.05em;
+	color: var(--text-muted);
+}
+
+.do-translation-zh {
+	margin-top: 4px;
+	font-size: 0.98em;
+	color: var(--text-normal);
+}
+
+/* Example */
+.do-example-box {
+	position: relative;
+	padding: 16px 56px 16px 18px;
+	margin-bottom: 18px;
+	border-radius: 14px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.do-example-da {
+	margin: 0;
+	font-size: 0.95em;
+	line-height: 1.55;
+	color: var(--text-normal);
+}
+
+.do-example-translations {
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.do-example-zh,
+.do-example-en {
+	margin: 0;
+	line-height: 1.5;
+}
+
+.do-example-en + .do-example-zh {
+	margin-top: 2px;
+}
+
+.do-example-zh + .do-example-en {
+	margin-top: 8px;
+}
+
+.do-example-zh {
+	font-size: 0.92em;
+	color: var(--text-normal);
+}
+
+.do-example-en {
+	font-size: 0.86em;
+	color: var(--text-muted);
+}
+
+.do-play-inline {
+	position: absolute;
+	top: 50%;
+	right: 12px;
+	transform: translateY(-50%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-modifier-hover);
+	color: var(--text-accent);
+	cursor: pointer;
+	transition: background 0.15s, transform 0.1s;
+}
+
+.do-play-inline:hover {
+	background: var(--background-modifier-border-hover);
+	transform: translateY(-50%) scale(1.05);
+}
+
+/* Tags */
+.do-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 22px;
+}
+
+.do-tag {
+	padding: 5px 14px;
+	border-radius: 20px;
+	font-size: 0.8em;
+	font-weight: 500;
+	background: var(--background-modifier-hover);
+	color: var(--text-muted);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.do-tag:last-child {
+	color: var(--text-accent);
+	border-color: var(--text-accent);
+	background: rgba(var(--color-accent-rgb, 108, 99, 255), 0.1);
+}
+
+/* Actions */
+.do-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	flex-shrink: 0;
+	margin-top: 12px;
+}
+
+.do-nav {
+	display: flex;
+	gap: 6px;
+	margin-right: 4px;
+}
+
+.do-btn {
+	padding: 8px 16px;
+	border-radius: 20px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	font-size: 0.85em;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s;
+	white-space: nowrap;
+}
+
+.do-btn:hover {
+	background: var(--background-modifier-border-hover);
+}
+
+.do-btn-icon {
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.1em;
+}
+
+.do-btn-action {
+	flex: 1;
+	min-width: 0;
+	text-align: center;
+}
+
+.do-btn-action.active {
+	border-color: var(--text-accent);
+	color: var(--text-accent);
+	background: rgba(var(--color-accent-rgb, 108, 99, 255), 0.12);
+}
