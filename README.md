@@ -6,6 +6,8 @@ An Obsidian plugin built on the Anki Danish frequency deck (DDO Danish Frequency
 
 ![Dagens Ord plugin screenshot](docs/screenshot.png)
 
+> **Example sentence translations (in progress):** 1282 English and 1 Chinese out of ~13,000 unique Danish example sentences.
+
 ## Features
 
 - Daily word rotation (deterministic selection by date)
