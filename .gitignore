@@ -5,3 +5,4 @@ data/.systran-browser-profile/
 scripts/* copy.py
 docs/superpowers/*
 scripts/systran-translate-examples.py copy.py
+data/.systran-browser-profile-trial/*
