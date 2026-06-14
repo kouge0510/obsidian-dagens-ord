@@ -75,3 +75,9 @@ npm run build     # Build main.js
 ### Deck source
 
 `DDO_Danish_Frequency_Deck_English.apkg` — `data/deck.json` currently holds 4442 high-frequency Danish words, 4304 with example sentences. The default daily pool uses all 4442 words; you can lower the count or filter by CEFR level in settings.
+
+## Acknowledgements
+
+This plugin was inspired by [ankidkdeck v2.0](https://github.com/iskoldt-X/ankidkdeck/releases/tag/v2.0) ([iskoldt-X/ankidkdeck](https://github.com/iskoldt-X/ankidkdeck)).
+
+Thanks to [Yifan Huang](https://github.com/Ploverrrr) for their help.

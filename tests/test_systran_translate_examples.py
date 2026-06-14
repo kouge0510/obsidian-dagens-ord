@@ -55,8 +55,61 @@ class SystranTranslateExamplesTest(unittest.TestCase):
             [
                 "Det er en rigtig god dag i dag.",
                 "Du bliver nødt til at acceptere mig, som jeg er",
-                "Hvor er du henne?",
             ],
+        )
+
+    def test_collect_texts_ignores_examples_da(self):
+        deck = {
+            "words": [
+                {
+                    "id": "vej",
+                    "exampleDa": "de .. kører ud ad en støvet vej i en gammel, åben Ford",
+                    "examplesDa": [
+                        "de .. kører ud ad en støvet vej i en gammel, åben Ford",
+                        "Den europæiske union er vejen til det nye Europa i den europæiske udvikling",
+                        "Det kildede hele vejen ned ad ryggen",
+                    ],
+                    "exampleEn": "road",
+                    "exampleZh": "道路",
+                    "examplesEn": [
+                        "road",
+                        "The European Union is the road to the new Europe of European development",
+                        "pathway",
+                    ],
+                    "examplesZh": ["道路", "方法", "过程"],
+                    "translationsEn": ["road", "street", "path", "route", "way", "pathway"],
+                    "translationsZh": ["道路", "方法", "过程"],
+                }
+            ]
+        }
+
+        texts_en = self.script.collect_texts(deck, only_missing=True, target="en")
+        texts_zh = self.script.collect_texts(deck, only_missing=True, target="zh")
+
+        self.assertEqual(texts_en, ["de .. kører ud ad en støvet vej i en gammel, åben Ford"])
+        self.assertEqual(texts_zh, ["de .. kører ud ad en støvet vej i en gammel, åben Ford"])
+
+    def test_seed_cache_from_deck_imports_good_primary_translation(self):
+        deck = {
+            "words": [
+                {
+                    "id": "vej",
+                    "exampleDa": "Den europæiske union er vejen til det nye Europa i den europæiske udvikling",
+                    "exampleEn": "The European Union is the road to the new Europe of European development",
+                    "exampleZh": "方法",
+                    "translationsEn": ["road", "street"],
+                    "translationsZh": ["道路", "方法"],
+                }
+            ]
+        }
+        cache = {"en": {}, "zh": {}}
+
+        seeded = self.script.seed_cache_from_deck(deck, cache, only_missing=True)
+
+        self.assertEqual(seeded, 1)
+        self.assertIn(
+            "Den europæiske union er vejen til det nye Europa i den europæiske udvikling",
+            cache["en"],
         )
 
     def test_apply_translations_updates_primary_and_arrays(self):
@@ -94,14 +147,8 @@ class SystranTranslateExamplesTest(unittest.TestCase):
         self.assertEqual(skipped, 0)
         self.assertEqual(word["exampleEn"], "It is a really good day today.")
         self.assertEqual(word["exampleZh"], "今天真是美好的一天。")
-        self.assertEqual(
-            word["examplesEn"],
-            ["It is a really good day today.", "Where are you?"],
-        )
-        self.assertEqual(
-            word["examplesZh"],
-            ["今天真是美好的一天。", "你在哪里？"],
-        )
+        self.assertEqual(word["examplesEn"], [])
+        self.assertEqual(word["examplesZh"], [])
 
     def test_parse_translation_payload_reads_outputs(self):
         payload = {
@@ -144,6 +191,8 @@ class SystranTranslateExamplesTest(unittest.TestCase):
         word = deck["words"][0]
         self.assertEqual(word["exampleEn"], "You have to accept me as I am")
         self.assertEqual(word["exampleZh"], "你必须接受我本来的样子")
+        self.assertEqual(word["examplesEn"], ["I"])
+        self.assertEqual(word["examplesZh"], ["我"])
         payload = {
             "outputs": [
                 {

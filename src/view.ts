@@ -227,6 +227,18 @@ export class DagensOrdView extends ItemView {
 		const box = card.createDiv({ cls: "do-example-box" });
 		box.createEl("p", { cls: "do-example-da", text: word.exampleDa });
 
+		const exampleEn = (word.exampleEn ?? "").trim();
+		const exampleZh = (word.exampleZh ?? "").trim();
+		if (exampleEn || exampleZh) {
+			const translations = box.createDiv({ cls: "do-example-translations" });
+			if (exampleEn) {
+				translations.createEl("p", { cls: "do-example-en", text: exampleEn });
+			}
+			if (exampleZh) {
+				translations.createEl("p", { cls: "do-example-zh", text: exampleZh });
+			}
+		}
+
 		const playEx = box.createEl("button", {
 			cls: "do-play-inline",
 			attr: { "aria-label": "播放例句" },

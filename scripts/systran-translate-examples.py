@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 """Translate Danish examples in deck.json via SYSTRAN web UI (logged-in browser)."""
+# cd "/home/kouge/Desktop/obsidian addons/obsidian-dagens-ord"
+
+# python3 scripts/systran-translate-examples.py \
+#   --launch-browser \
+#   --browser-profile "data/.systran-browser-profile-trial" \
+#   --only-missing \
+#   --auto-restart
+
+# 能用了再跑这个脚本
+# python3 scripts/systran-translate-examples.py \  
+#   --launch-browser \
+#   --browser-profile "data/.systran-browser-profile-trial" \
+#   --probe
 
 from __future__ import annotations
 
@@ -33,7 +46,8 @@ DEFAULT_TARGETS = ("en", "zh")
 TRANSLATE_HOSTS = ("translate.systran.net", "trs.systran.net")
 TRANSLATE_PATH_HINTS = ("/translationTools/text", "/translate")
 WEB_TRANSLATE_JSON = "/node/translate/json"
-BLANK_WAIT_MS = 20_000
+BLANK_WAIT_MS = 50_000
+MIN_TIMEOUT_MS = 50_000
 MAX_SUBMIT_RETRIES = 3
 
 
@@ -67,54 +81,71 @@ def is_word_gloss_translation(da: str, translated: str, glosses: list[str]) -> b
     return translated in glosses
 
 
-def example_pair_needs_translation(da: str, en: str, zh: str, word: dict) -> bool:
+def sentence_needs_en_translation(da: str, en: str, word: dict) -> bool:
     if not da:
         return False
-    if not en or not zh:
+    if not (en or "").strip():
         return True
-    glosses_en = normalize_examples(word.get("translationsEn"))
-    glosses_zh = normalize_examples(word.get("translationsZh"))
-    if is_word_gloss_translation(da, en, glosses_en):
+    return is_word_gloss_translation(da, en.strip(), normalize_examples(word.get("translationsEn")))
+
+
+def sentence_needs_zh_translation(da: str, zh: str, word: dict) -> bool:
+    if not da:
+        return False
+    if not (zh or "").strip():
         return True
-    if is_word_gloss_translation(da, zh, glosses_zh):
-        return True
-    return False
+    return is_word_gloss_translation(da, zh.strip(), normalize_examples(word.get("translationsZh")))
+
+
+def example_pair_needs_translation(da: str, en: str, zh: str, word: dict) -> bool:
+    return sentence_needs_en_translation(da, en, word) or sentence_needs_zh_translation(da, zh, word)
+
+
+def get_primary_example_fields(word: dict) -> tuple[str, str, str]:
+    example_da = (word.get("exampleDa") or "").strip()
+    example_en = (word.get("exampleEn") or "").strip()
+    example_zh = (word.get("exampleZh") or "").strip()
+    return example_da, example_en, example_zh
 
 
 def example_needs_translation(word: dict, only_missing: bool) -> bool:
-    example_da = (word.get("exampleDa") or "").strip()
-    examples_da = normalize_examples(word.get("examplesDa"))
-    if not example_da and not examples_da:
+    example_da, example_en, example_zh = get_primary_example_fields(word)
+    if not example_da:
         return False
     if not only_missing:
         return True
-
-    example_en = (word.get("exampleEn") or "").strip()
-    example_zh = (word.get("exampleZh") or "").strip()
-    examples_en = normalize_examples(word.get("examplesEn"))
-    examples_zh = normalize_examples(word.get("examplesZh"))
-
-    if example_da and example_pair_needs_translation(example_da, example_en, example_zh, word):
-        return True
-    for index, text in enumerate(examples_da):
-        en = examples_en[index] if index < len(examples_en) else ""
-        zh = examples_zh[index] if index < len(examples_zh) else ""
-        if example_pair_needs_translation(text, en, zh, word):
-            return True
-    return False
+    return example_pair_needs_translation(example_da, example_en, example_zh, word)
 
 
-def collect_texts(deck: dict, only_missing: bool) -> list[str]:
+def collect_texts(deck: dict, only_missing: bool, *, target: str = "both") -> list[str]:
     texts: set[str] = set()
     for word in deck.get("words", []):
-        if not example_needs_translation(word, only_missing):
+        da, en, zh = get_primary_example_fields(word)
+        if not da:
             continue
-        example_da = (word.get("exampleDa") or "").strip()
-        if example_da:
-            texts.add(example_da)
-        for item in normalize_examples(word.get("examplesDa")):
-            texts.add(item)
+        if not only_missing:
+            texts.add(da)
+            continue
+        if target in ("en", "both") and sentence_needs_en_translation(da, en, word):
+            texts.add(da)
+        if target in ("zh", "both") and sentence_needs_zh_translation(da, zh, word):
+            texts.add(da)
     return sorted(texts)
+
+
+def seed_cache_from_deck(deck: dict, cache: dict[str, dict[str, str]], *, only_missing: bool) -> int:
+    if not only_missing:
+        return 0
+    seeded = 0
+    for word in deck.get("words", []):
+        da, en, zh = get_primary_example_fields(word)
+        if da and en and not sentence_needs_en_translation(da, en, word) and da not in cache["en"]:
+            cache["en"][da] = en
+            seeded += 1
+        if da and zh and not sentence_needs_zh_translation(da, zh, word) and da not in cache["zh"]:
+            cache["zh"][da] = zh
+            seeded += 1
+    return seeded
 
 
 def load_cache(path: Path) -> dict[str, dict[str, str]]:
@@ -273,12 +304,12 @@ def is_translate_json_response(url: str) -> bool:
     return url.endswith(WEB_TRANSLATE_JSON)
 
 
-def submit_translation(page: Page, text: str) -> str:
+def submit_translation(page: Page, text: str, *, timeout_ms: int = BLANK_WAIT_MS) -> str:
     textarea = page.locator("textarea").first
     textarea.click()
     with page.expect_response(
         lambda response: is_translate_json_response(response.url) and response.request.method == "POST",
-        timeout=BLANK_WAIT_MS,
+        timeout=timeout_ms,
     ) as response_info:
         textarea.fill(text)
         page.keyboard.press("Control+Enter")
@@ -314,6 +345,8 @@ class BrowserTranslator:
         self.source = source
         self.timeout_ms = timeout_ms
         self._active_pair: tuple[str, str] | None = None
+        context.set_default_timeout(timeout_ms)
+        page.set_default_timeout(timeout_ms)
 
     def ensure_language_pair(self, source: str, target: str) -> None:
         pair = (source, target)
@@ -338,7 +371,7 @@ class BrowserTranslator:
             try:
                 if not page_has_translate_textarea(self.page):
                     raise BrowserTranslateError("Translate textarea not found")
-                result = submit_translation(self.page, text)
+                result = submit_translation(self.page, text, timeout_ms=self.timeout_ms)
                 if result.strip():
                     clear_translate_input(self.page)
                     return result
@@ -397,14 +430,14 @@ class BrowserTranslator:
             timeout=timeout_ms,
         )
         try:
-            wait_for_translate_ui(page, timeout_ms=15_000)
-        except BrowserTranslateError:
+            wait_for_translate_ui(page, timeout_ms=timeout_ms)
+        except (BrowserTranslateError, PlaywrightTimeoutError):
             print(
                 "Browser opened. Log into SYSTRAN in this window, "
                 "open Text Translation, then press Enter here to continue."
             )
             input()
-            wait_for_translate_ui(page, timeout_ms)
+            wait_for_translate_ui(page, timeout_ms=timeout_ms)
         translator = cls._from_context(context, page, source=source, timeout_ms=timeout_ms)
         translator._active_pair = (source, "en")
         return translator, context
@@ -430,6 +463,26 @@ class BrowserTranslator:
         return self.translate_once(text, source=self.source, target=target)
 
 
+def merge_example_translation(
+    cached: str,
+    existing: str,
+    da: str,
+    word: dict,
+    *,
+    target: str,
+    only_missing: bool,
+) -> str:
+    if cached:
+        return cached
+    if only_missing and existing:
+        if target == "en" and not sentence_needs_en_translation(da, existing, word):
+            return existing
+        if target == "zh" and not sentence_needs_zh_translation(da, existing, word):
+            return existing
+        return existing
+    return existing if only_missing else ""
+
+
 def apply_translations(
     deck: dict,
     cache: dict[str, dict[str, str]],
@@ -440,53 +493,49 @@ def apply_translations(
     skipped = 0
 
     for word in deck.get("words", []):
-        if not example_needs_translation(word, only_missing):
+        example_da, existing_en, existing_zh = get_primary_example_fields(word)
+        if not example_da:
             skipped += 1
             continue
 
-        example_da = (word.get("exampleDa") or "").strip()
-        examples_da = normalize_examples(word.get("examplesDa"))
-        if not example_da and examples_da:
-            example_da = examples_da[0]
-        if not examples_da and example_da:
-            examples_da = [example_da]
-        if not example_da and not examples_da:
+        cached_en = cache["en"].get(example_da, "")
+        cached_zh = cache["zh"].get(example_da, "")
+        new_en = merge_example_translation(
+            cached_en,
+            existing_en,
+            example_da,
+            word,
+            target="en",
+            only_missing=only_missing,
+        )
+        new_zh = merge_example_translation(
+            cached_zh,
+            existing_zh,
+            example_da,
+            word,
+            target="zh",
+            only_missing=only_missing,
+        )
+
+        changed = False
+        if new_en != existing_en:
+            word["exampleEn"] = new_en
+            changed = True
+        if new_zh != existing_zh:
+            word["exampleZh"] = new_zh
+            changed = True
+
+        if changed:
+            updated += 1
+        else:
             skipped += 1
-            continue
-
-        examples_en = [cache["en"].get(text, "") for text in examples_da]
-        examples_zh = [cache["zh"].get(text, "") for text in examples_da]
-
-        if only_missing:
-            existing_en = normalize_examples(word.get("examplesEn"))
-            existing_zh = normalize_examples(word.get("examplesZh"))
-            examples_en = [
-                cached if cached else (existing_en[index] if index < len(existing_en) else "")
-                for index, cached in enumerate(examples_en)
-            ]
-            examples_zh = [
-                cached if cached else (existing_zh[index] if index < len(existing_zh) else "")
-                for index, cached in enumerate(examples_zh)
-            ]
-
-        word["examplesEn"] = examples_en
-        word["examplesZh"] = examples_zh
-        example_en = cache["en"].get(example_da, "") if example_da else ""
-        example_zh = cache["zh"].get(example_da, "") if example_da else ""
-        if only_missing:
-            if not example_en:
-                example_en = (word.get("exampleEn") or "").strip()
-            if not example_zh:
-                example_zh = (word.get("exampleZh") or "").strip()
-        word["exampleEn"] = example_en or (examples_en[0] if examples_en else "")
-        word["exampleZh"] = example_zh or (examples_zh[0] if examples_zh else "")
-        updated += 1
 
     return updated, skipped
 
 
 def translate_texts_with_browser(
-    texts: list[str],
+    texts_en: list[str],
+    texts_zh: list[str],
     translator: BrowserTranslator,
     cache: dict[str, dict[str, str]],
     cache_path: Path,
@@ -497,11 +546,10 @@ def translate_texts_with_browser(
 ) -> tuple[int, int]:
     translated_en = 0
     translated_zh = 0
-    total = len(texts)
-    pending_da = list(texts) if force else [text for text in texts if text not in cache["en"]]
-    pending_zh_keys = list(texts) if force else [text for text in texts if text not in cache["zh"]]
-    skipped_en = total - len(pending_da)
-    skipped_zh = total - len(pending_zh_keys)
+    pending_da = list(texts_en) if force else [text for text in texts_en if text not in cache["en"]]
+    pending_zh_keys = list(texts_zh) if force else [text for text in texts_zh if text not in cache["zh"]]
+    skipped_en = len(texts_en) - len(pending_da)
+    skipped_zh = len(texts_zh) - len(pending_zh_keys)
 
     if skipped_en:
         print(f"Skipping {skipped_en} Danish sentence(s) with English already cached", flush=True)
@@ -512,7 +560,7 @@ def translate_texts_with_browser(
         translator.ensure_language_pair(translator.source, "en")
         print(
             f"Phase 1/2: {len(pending_da)} Danish -> English remaining "
-            f"({skipped_en}/{total} already done)",
+            f"({skipped_en}/{len(texts_en)} already done)",
             flush=True,
         )
         for index, danish in enumerate(pending_da, start=1):
@@ -520,7 +568,7 @@ def translate_texts_with_browser(
             translated_en += 1
             save_cache(cache_path, cache)
             global_index = skipped_en + index
-            print(f"[EN {global_index}/{total}] {danish[:70]}", flush=True)
+            print(f"[EN {global_index}/{len(texts_en)}] {danish[:70]}", flush=True)
             if on_checkpoint and global_index % 25 == 0:
                 on_checkpoint(cache)
             if sleep_seconds > 0 and index < len(pending_da):
@@ -539,7 +587,7 @@ def translate_texts_with_browser(
         translator.ensure_language_pair("en", "zh")
         print(
             f"Phase 2/2: {len(pending_zh_keys)} English -> Chinese remaining "
-            f"({skipped_zh}/{total} already done)",
+            f"({skipped_zh}/{len(texts_zh)} already done)",
             flush=True,
         )
         for index, danish in enumerate(pending_zh_keys, start=1):
@@ -548,7 +596,7 @@ def translate_texts_with_browser(
             translated_zh += 1
             save_cache(cache_path, cache)
             global_index = skipped_zh + index
-            print(f"[ZH {global_index}/{total}] {danish[:70]}", flush=True)
+            print(f"[ZH {global_index}/{len(texts_zh)}] {danish[:70]}", flush=True)
             if on_checkpoint and global_index % 25 == 0:
                 on_checkpoint(cache)
             if sleep_seconds > 0 and index < len(pending_zh_keys):
@@ -606,7 +654,8 @@ def restart_self(*, wait_seconds: float) -> None:
 def run_browser_translation(
     args: argparse.Namespace,
     deck: dict,
-    texts: list[str],
+    texts_en: list[str],
+    texts_zh: list[str],
     cache: dict[str, dict[str, str]],
     *,
     checkpoint_deck: Callable[[dict[str, dict[str, str]]], None],
@@ -632,7 +681,8 @@ def run_browser_translation(
                 page_url=page_url,
             )
         translated_en, translated_zh = translate_texts_with_browser(
-            texts,
+            texts_en,
+            texts_zh,
             translator,
             cache,
             args.cache,
@@ -664,7 +714,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--browser-profile", type=Path, default=DEFAULT_BROWSER_PROFILE)
     parser.add_argument("--page-url", default="", help="Prefer an already-open SYSTRAN tab URL")
     parser.add_argument("--source", default=DEFAULT_SOURCE)
-    parser.add_argument("--timeout", type=float, default=60.0)
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=90.0,
+        help="Playwright timeout in seconds (minimum 50, default: 90)",
+    )
     parser.add_argument("--sleep", type=float, default=0.5)
     parser.add_argument(
         "--only-missing",
@@ -697,7 +752,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args(argv)
 
-    timeout_ms = max(5_000, int(args.timeout * 1000))
+    timeout_ms = max(MIN_TIMEOUT_MS, int(args.timeout * 1000))
     page_url = args.page_url.strip() or None
 
     if args.probe:
@@ -710,28 +765,36 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     deck = json.loads(args.deck.read_text(encoding="utf-8"))
-    texts = collect_texts(deck, args.only_missing)
+    texts_en = collect_texts(deck, args.only_missing, target="en")
+    texts_zh = collect_texts(deck, args.only_missing, target="zh")
     if args.limit > 0:
-        texts = texts[: args.limit]
+        texts_en = texts_en[: args.limit]
+        texts_zh = texts_zh[: args.limit]
 
-    print(f"Unique Danish example texts: {len(texts)}")
+    print(f"Unique Danish example texts needing English: {len(texts_en)}")
+    print(f"Unique Danish example texts needing Chinese: {len(texts_zh)}")
     mode = "only missing / bad glosses" if args.only_missing else "all examples"
     if args.force:
         mode += ", force re-translate"
     print(f"Mode: {mode}")
 
     if args.dry_run:
-        for text in texts[:10]:
+        preview = sorted(set(texts_en) | set(texts_zh))
+        for text in preview[:10]:
             print(f"  - {text}")
-        if len(texts) > 10:
-            print(f"  ... and {len(texts) - 10} more")
+        if len(preview) > 10:
+            print(f"  ... and {len(preview) - 10} more")
         return 0
 
     cache = load_cache(args.cache)
-    cached_en = sum(1 for text in texts if text in cache["en"])
-    cached_zh = sum(1 for text in texts if text in cache["zh"])
-    pending_en = len(texts) if args.force else sum(1 for text in texts if text not in cache["en"])
-    pending_zh = len(texts) if args.force else sum(1 for text in texts if text not in cache["zh"])
+    seeded = seed_cache_from_deck(deck, cache, only_missing=args.only_missing)
+    if seeded:
+        save_cache(args.cache, cache)
+        print(f"Seeded cache from deck for {seeded} already-good sentence translation(s)")
+    cached_en = sum(1 for text in texts_en if text in cache["en"])
+    cached_zh = sum(1 for text in texts_zh if text in cache["zh"])
+    pending_en = len(texts_en) if args.force else sum(1 for text in texts_en if text not in cache["en"])
+    pending_zh = len(texts_zh) if args.force else sum(1 for text in texts_zh if text not in cache["zh"])
 
     if args.apply_cache_to_deck:
         updated, skipped = apply_translations(deck, cache, only_missing=args.only_missing)
@@ -746,7 +809,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print(
-        f"Cache: English {cached_en}/{len(texts)}, Chinese {cached_zh}/{len(texts)}"
+        f"Cache: English {cached_en}/{len(texts_en)}, Chinese {cached_zh}/{len(texts_zh)}"
     )
     if not args.force and (cached_en or cached_zh):
         print("Resume mode: already cached sentences will be skipped (do not use --force)")
@@ -763,7 +826,8 @@ def main(argv: list[str] | None = None) -> int:
         translated_en, translated_zh, updated, skipped = run_browser_translation(
             args,
             deck,
-            texts,
+            texts_en,
+            texts_zh,
             cache,
             checkpoint_deck=checkpoint_deck,
             timeout_ms=timeout_ms,
@@ -777,7 +841,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(1) from exc
 
     stats = TranslateStats(
-        unique_texts=len(texts),
+        unique_texts=len(set(texts_en) | set(texts_zh)),
         translated_en=translated_en,
         translated_zh=translated_zh,
         words_updated=updated,

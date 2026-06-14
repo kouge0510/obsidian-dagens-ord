@@ -75,3 +75,9 @@ npm run build     # 构建 main.js
 ### 词库来源
 
 `DDO_Danish_Frequency_Deck_English.apkg` — `data/deck.json` 当前包含 4442 个丹麦语高频词，其中 4304 个带例句。插件默认使用全量 4442 个词作为每日学习范围，也可在设置里调小或按 CEFR 等级筛选。
+
+## 致谢
+
+本插件的灵感来源于 [ankidkdeck v2.0](https://github.com/iskoldt-X/ankidkdeck/releases/tag/v2.0)（[iskoldt-X/ankidkdeck](https://github.com/iskoldt-X/ankidkdeck)）。
+
+感谢 [Yifan Huang](https://github.com/Ploverrrr) 提供的帮助。
