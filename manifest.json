@@ -1,7 +1,7 @@
 {
 	"id": "dagens-ord",
 	"name": "Dagens Ord",
-	"version": "1.0.0",
+	"version": "1.0.2",
 	"minAppVersion": "1.5.0",
 	"description": "Daily Danish word learning plugin for Obsidian",
 	"author": "Shuyang Liu and Yifan Huang",
