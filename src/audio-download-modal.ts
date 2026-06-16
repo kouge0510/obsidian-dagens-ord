@@ -36,8 +36,9 @@ export class AudioDownloadModal extends Modal {
 		contentEl.createEl("h2", { text: "Download pronunciation audio" });
 		contentEl.createEl("p", {
 			text:
-				"The pronunciation audio for this plugin has not been downloaded to your device yet. " +
-				"Would you like to download it now from GitHub? This may take a while and requires an internet connection.",
+				"Some pronunciation audio files are missing on your device. " +
+				"Would you like to download the missing files now from GitHub? " +
+				"This may take a while and requires an internet connection.",
 		});
 
 		const buttons = contentEl.createDiv({ cls: "do-modal-buttons" });

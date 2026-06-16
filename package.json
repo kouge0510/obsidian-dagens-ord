@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-dagens-ord",
-	"version": "1.0.0",
+	"version": "1.0.8",
 	"description": "Daily Danish word learning plugin for Obsidian",
 	"main": "main.js",
 	"scripts": {

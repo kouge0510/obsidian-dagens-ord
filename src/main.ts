@@ -76,9 +76,19 @@ export default class DagensOrdPlugin extends Plugin {
 		await this.activateView();
 	}
 
-	/** Returns true when local audio passes the self-check. */
+	/**
+	 * Returns true when the local audio is complete (no missing files vs. the
+	 * remote manifest). Falls back to a local-presence check when offline.
+	 */
 	private async runAudioSelfCheck(): Promise<boolean> {
-		const ok = await this.audioDownloader.hasLocalAudio();
+		let ok: boolean;
+		try {
+			const missing = await this.audioDownloader.getMissingFiles();
+			ok = missing.length === 0;
+		} catch {
+			// Could not reach GitHub: don't nag if there is already local audio.
+			ok = await this.audioDownloader.hasLocalAudio();
+		}
 		if (this.settings.audioDownloaded !== ok) {
 			this.settings.audioDownloaded = ok;
 			await this.saveSettings();

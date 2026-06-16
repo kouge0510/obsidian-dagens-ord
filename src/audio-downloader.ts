@@ -32,6 +32,7 @@ export class AudioDownloadCancelled extends Error {
 
 export class AudioDownloader {
 	private cancelled = false;
+	private remoteCache: string[] | null = null;
 
 	constructor(
 		private app: App,
@@ -62,8 +63,9 @@ export class AudioDownloader {
 		return false;
 	}
 
-	/** Fetch the list of remote audio file paths (relative to repo root). */
-	async listRemoteAudioFiles(): Promise<string[]> {
+	/** Fetch the list of remote audio file paths (relative to repo root). Cached for the session. */
+	async listRemoteAudioFiles(force = false): Promise<string[]> {
+		if (this.remoteCache && !force) return this.remoteCache;
 		const res = await requestUrl({
 			url: TREE_URL,
 			headers: { Accept: "application/vnd.github+json" },
@@ -72,9 +74,47 @@ export class AudioDownloader {
 		if (!data || !Array.isArray(data.tree)) {
 			throw new Error("Unexpected response from GitHub API");
 		}
-		return data.tree
+		this.remoteCache = data.tree
 			.filter((node) => node.type === "blob" && node.path.startsWith("audio/"))
 			.map((node) => node.path);
+		return this.remoteCache;
+	}
+
+	/** Build a set of locally present audio file paths (relative to repo root). */
+	private async listLocalAudioFiles(): Promise<Set<string>> {
+		const adapter = this.app.vault.adapter;
+		const prefix = `${this.pluginDir}/`;
+		const result = new Set<string>();
+		const root = normalizePath(`${this.pluginDir}/audio`);
+
+		const walk = async (dir: string): Promise<void> => {
+			if (!(await adapter.exists(dir))) return;
+			let listed: { files: string[]; folders: string[] };
+			try {
+				listed = await adapter.list(dir);
+			} catch {
+				return;
+			}
+			for (const file of listed.files) {
+				const rel = file.startsWith(prefix) ? file.slice(prefix.length) : file;
+				result.add(rel);
+			}
+			for (const folder of listed.folders) {
+				await walk(folder);
+			}
+		};
+
+		await walk(root);
+		return result;
+	}
+
+	/** Return remote audio files that are missing locally. */
+	async getMissingFiles(): Promise<string[]> {
+		const [remote, local] = await Promise.all([
+			this.listRemoteAudioFiles(),
+			this.listLocalAudioFiles(),
+		]);
+		return remote.filter((path) => !local.has(path));
 	}
 
 	/**
