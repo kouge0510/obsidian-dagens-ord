@@ -66,6 +66,26 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 						}),
 				);
 		}
+
+		containerEl.createEl("h3", { text: "Pronunciation audio" });
+
+		new Setting(containerEl)
+			.setName("Download audio")
+			.setDesc(
+				this.plugin.settings.audioDownloaded
+					? "Audio is available locally. You can re-run the download to fetch any missing files."
+					: "Audio has not been downloaded yet. Download it from GitHub to enable playback.",
+			)
+			.addButton((button) =>
+				button
+					.setButtonText(
+						this.plugin.settings.audioDownloaded ? "Re-download" : "Download",
+					)
+					.setCta()
+					.onClick(() => {
+						this.plugin.openAudioDownloadModal();
+					}),
+			);
 	}
 
 	private countWordsByLevel(): Record<CefrLevel, number> {

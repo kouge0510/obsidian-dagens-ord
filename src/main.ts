@@ -1,5 +1,7 @@
 import { Plugin } from "obsidian";
 import deckJson from "../data/deck.json";
+import { AudioDownloader } from "./audio-downloader";
+import { AudioDownloadModal } from "./audio-download-modal";
 import { DeckStore } from "./deck-store";
 import { LocalAudio } from "./local-audio";
 import { normalizePlaybackRate } from "./playback-speed";
@@ -11,12 +13,15 @@ export default class DagensOrdPlugin extends Plugin {
 	settings: DagensOrdSettings = DEFAULT_SETTINGS;
 	deckStore = new DeckStore(this.app);
 	audio!: LocalAudio;
+	audioDownloader!: AudioDownloader;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
 		await this.deckStore.loadDeck(JSON.stringify(deckJson));
 
-		this.audio = new LocalAudio(this.app, this.manifest.dir || "");
+		const pluginDir = this.manifest.dir || "";
+		this.audio = new LocalAudio(this.app, pluginDir);
+		this.audioDownloader = new AudioDownloader(this.app, pluginDir);
 
 		this.registerView(VIEW_TYPE, (leaf) => new DagensOrdView(leaf, this));
 
@@ -42,7 +47,40 @@ export default class DagensOrdPlugin extends Plugin {
 			},
 		});
 
+		this.addCommand({
+			id: "dagens-ord-download-audio",
+			name: "下载发音音频 / Download pronunciation audio",
+			callback: () => this.openAudioDownloadModal(),
+		});
+
 		this.addSettingTab(new DagensOrdSettingTab(this.app, this));
+
+		this.app.workspace.onLayoutReady(() => void this.maybePromptAudioDownload());
+	}
+
+	openAudioDownloadModal(): void {
+		new AudioDownloadModal(this.app, this.audioDownloader, (success) => {
+			if (success) {
+				this.settings.audioDownloaded = true;
+				this.settings.audioPromptDismissed = true;
+			} else {
+				this.settings.audioPromptDismissed = true;
+			}
+			void this.saveSettings();
+		}).open();
+	}
+
+	private async maybePromptAudioDownload(): Promise<void> {
+		if (this.settings.audioDownloaded) return;
+
+		if (await this.audioDownloader.hasLocalAudio()) {
+			this.settings.audioDownloaded = true;
+			await this.saveSettings();
+			return;
+		}
+
+		if (this.settings.audioPromptDismissed) return;
+		this.openAudioDownloadModal();
 	}
 
 	onunload(): void {

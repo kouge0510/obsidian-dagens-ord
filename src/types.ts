@@ -35,6 +35,8 @@ export interface DagensOrdSettings {
 	dailyWordCount: number;
 	playbackRate: number;
 	dailyCefrLevels: CefrLevel[];
+	audioDownloaded: boolean;
+	audioPromptDismissed: boolean;
 }
 
 export const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
@@ -44,4 +46,6 @@ export const DEFAULT_SETTINGS: DagensOrdSettings = {
 	dailyWordCount: 4442,
 	playbackRate: 1,
 	dailyCefrLevels: [...CEFR_LEVELS],
+	audioDownloaded: false,
+	audioPromptDismissed: false,
 };
