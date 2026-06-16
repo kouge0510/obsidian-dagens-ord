@@ -113,15 +113,8 @@ export class AudioDownloadModal extends Modal {
 			const result = await this.downloader.downloadAll(onProgress);
 			this.downloading = false;
 			barInner.style.width = "100%";
-			if (result.failed > 0) {
-				new Notice(
-					`Audio download finished with ${result.failed} failed file(s). You can re-run the download to retry.`,
-				);
-			} else {
-				new Notice("Audio download complete.");
-			}
-			this.onComplete(true);
-			this.close();
+			this.onComplete(result.failed === 0);
+			this.renderComplete(result);
 		} catch (err) {
 			this.downloading = false;
 			if (err instanceof AudioDownloadCancelled) {
@@ -139,5 +132,82 @@ export class AudioDownloadModal extends Modal {
 				this.close();
 			};
 		}
+	}
+
+	private renderComplete(result: DownloadProgress): void {
+		const { contentEl } = this;
+		contentEl.empty();
+
+		const ok = result.failed === 0;
+		const downloaded = Math.max(0, result.completed - result.skipped - result.failed);
+
+		const header = contentEl.createDiv();
+		header.style.display = "flex";
+		header.style.alignItems = "center";
+		header.style.gap = "10px";
+
+		const badge = header.createDiv();
+		badge.style.width = "32px";
+		badge.style.height = "32px";
+		badge.style.borderRadius = "50%";
+		badge.style.display = "flex";
+		badge.style.alignItems = "center";
+		badge.style.justifyContent = "center";
+		badge.style.flexShrink = "0";
+		badge.style.color = "var(--text-on-accent)";
+		badge.style.background = ok
+			? "var(--interactive-accent)"
+			: "var(--background-modifier-error)";
+		badge.setText(ok ? "✓" : "!");
+		badge.style.fontWeight = "bold";
+
+		header.createEl("h2", {
+			text: ok ? "Audio download complete" : "Download finished with errors",
+		});
+
+		const bar = contentEl.createDiv();
+		bar.style.width = "100%";
+		bar.style.height = "10px";
+		bar.style.borderRadius = "5px";
+		bar.style.marginTop = "12px";
+		bar.style.background = "var(--interactive-accent)";
+
+		const list = contentEl.createEl("ul");
+		list.style.marginTop = "14px";
+		list.style.lineHeight = "1.7";
+		list.createEl("li", { text: `Total audio files: ${result.total}` });
+		list.createEl("li", { text: `Newly downloaded: ${downloaded}` });
+		list.createEl("li", { text: `Already present (skipped): ${result.skipped}` });
+		if (result.failed > 0) {
+			const failed = list.createEl("li", { text: `Failed: ${result.failed}` });
+			failed.style.color = "var(--text-error)";
+		}
+
+		contentEl.createEl("p", {
+			cls: "setting-item-description",
+			text: ok
+				? "All pronunciation audio is now available on your device."
+				: "Some files could not be downloaded. You can run the download again to retry the failed files.",
+		});
+
+		const buttons = contentEl.createDiv();
+		buttons.style.display = "flex";
+		buttons.style.justifyContent = "flex-end";
+		buttons.style.gap = "8px";
+		buttons.style.marginTop = "16px";
+
+		if (result.failed > 0) {
+			const retryBtn = buttons.createEl("button", { text: "Retry failed" });
+			retryBtn.addEventListener("click", () => void this.startDownload());
+		}
+
+		const doneBtn = buttons.createEl("button", { text: "Done", cls: "mod-cta" });
+		doneBtn.addEventListener("click", () => this.close());
+
+		new Notice(
+			ok
+				? "Audio download complete."
+				: `Audio download finished with ${result.failed} failed file(s).`,
+		);
 	}
 }

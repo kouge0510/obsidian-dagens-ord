@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-dagens-ord",
-	"version": "1.0.8",
-	"description": "Daily Danish word learning plugin for Obsidian",
+	"version": "1.0.9",
+	"description": "Learn a high-frequency Danish word each day, with pronunciation, example sentences, and English and Chinese translations.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

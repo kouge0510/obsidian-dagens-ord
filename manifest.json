@@ -1,10 +1,10 @@
 {
 	"id": "dagens-ord",
 	"name": "Dagens Ord",
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"minAppVersion": "1.5.0",
-	"description": "Daily Danish word learning plugin for Obsidian",
+	"description": "Learn a high-frequency Danish word each day, with pronunciation, example sentences, and English and Chinese translations.",
 	"author": "Shuyang Liu and Yifan Huang",
-	"authorUrl": "",
+	"authorUrl": "https://github.com/kouge0510",
 	"isDesktopOnly": false
 }
