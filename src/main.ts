@@ -14,6 +14,7 @@ export default class DagensOrdPlugin extends Plugin {
 	deckStore = new DeckStore(this.app);
 	audio!: LocalAudio;
 	audioDownloader!: AudioDownloader;
+	private audioModalOpen = false;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -26,13 +27,13 @@ export default class DagensOrdPlugin extends Plugin {
 		this.registerView(VIEW_TYPE, (leaf) => new DagensOrdView(leaf, this));
 
 		this.addRibbonIcon("languages", "Dagens ord", () => {
-			void this.activateView();
+			void this.openWithAudioCheck();
 		});
 
 		this.addCommand({
 			id: "open-dagens-ord",
 			name: "打开每日丹麦语",
-			callback: () => void this.activateView(),
+			callback: () => void this.openWithAudioCheck(),
 		});
 
 		this.addCommand({
@@ -54,33 +55,35 @@ export default class DagensOrdPlugin extends Plugin {
 		});
 
 		this.addSettingTab(new DagensOrdSettingTab(this.app, this));
-
-		this.app.workspace.onLayoutReady(() => void this.maybePromptAudioDownload());
 	}
 
 	openAudioDownloadModal(): void {
+		if (this.audioModalOpen) return;
+		this.audioModalOpen = true;
 		new AudioDownloadModal(this.app, this.audioDownloader, (success) => {
-			if (success) {
-				this.settings.audioDownloaded = true;
-				this.settings.audioPromptDismissed = true;
-			} else {
-				this.settings.audioPromptDismissed = true;
-			}
+			this.audioModalOpen = false;
+			this.settings.audioDownloaded = success;
 			void this.saveSettings();
 		}).open();
 	}
 
-	private async maybePromptAudioDownload(): Promise<void> {
-		if (this.settings.audioDownloaded) return;
-
-		if (await this.audioDownloader.hasLocalAudio()) {
-			this.settings.audioDownloaded = true;
-			await this.saveSettings();
-			return;
+	/** Open the view; run a self-check first and prompt if local audio is missing. */
+	private async openWithAudioCheck(): Promise<void> {
+		const ok = await this.runAudioSelfCheck();
+		if (!ok) {
+			this.openAudioDownloadModal();
 		}
+		await this.activateView();
+	}
 
-		if (this.settings.audioPromptDismissed) return;
-		this.openAudioDownloadModal();
+	/** Returns true when local audio passes the self-check. */
+	private async runAudioSelfCheck(): Promise<boolean> {
+		const ok = await this.audioDownloader.hasLocalAudio();
+		if (this.settings.audioDownloaded !== ok) {
+			this.settings.audioDownloaded = ok;
+			await this.saveSettings();
+		}
+		return ok;
 	}
 
 	onunload(): void {
