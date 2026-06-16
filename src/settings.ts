@@ -11,7 +11,7 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Dagens Ord Settings" });
+		new Setting(containerEl).setName("Dagens Ord settings").setHeading();
 
 		containerEl.createEl("p", {
 			cls: "setting-item-description",
@@ -40,7 +40,7 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		containerEl.createEl("h3", { text: "Daily CEFR levels" });
+		new Setting(containerEl).setName("Daily CEFR levels").setHeading();
 
 		const levelCounts = this.countWordsByLevel();
 		const activeCount = this.plugin.deckStore.getActiveWords(
@@ -67,7 +67,7 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 				);
 		}
 
-		containerEl.createEl("h3", { text: "Pronunciation audio" });
+		new Setting(containerEl).setName("Pronunciation audio").setHeading();
 
 		new Setting(containerEl)
 			.setName("Download audio")

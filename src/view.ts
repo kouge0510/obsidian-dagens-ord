@@ -1,4 +1,4 @@
-import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
+import { ItemView, Notice, WorkspaceLeaf, setIcon } from "obsidian";
 import type DagensOrdPlugin from "./main";
 import { formatPlaybackRate, nextPlaybackRate } from "./playback-speed";
 import type { WordEntry } from "./types";
@@ -126,13 +126,13 @@ export class DagensOrdView extends ItemView {
 			}
 
 			scrollEl.scrollTop = next;
-			rafId = requestAnimationFrame(tick);
+			rafId = window.requestAnimationFrame(tick);
 		};
 
 		const start = () => {
 			if (rafId === null) {
 				lastFrame = 0;
-				rafId = requestAnimationFrame(tick);
+				rafId = window.requestAnimationFrame(tick);
 			}
 		};
 
@@ -159,7 +159,7 @@ export class DagensOrdView extends ItemView {
 		this.wheelScrollCleanup = () => {
 			card.removeEventListener("wheel", onWheel, { capture: true });
 			if (rafId !== null) {
-				cancelAnimationFrame(rafId);
+				window.cancelAnimationFrame(rafId);
 				rafId = null;
 			}
 		};
@@ -197,7 +197,7 @@ export class DagensOrdView extends ItemView {
 			cls: "do-play-btn",
 			attr: { "aria-label": "播放发音" },
 		});
-		playBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+		setIcon(playBtn, "play");
 		playBtn.addEventListener("click", () =>
 			void this.playAudio(`word-${word.id}`, word.audioWord),
 		);
@@ -243,7 +243,7 @@ export class DagensOrdView extends ItemView {
 			cls: "do-play-inline",
 			attr: { "aria-label": "播放例句" },
 		});
-		playEx.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+		setIcon(playEx, "play");
 		playEx.addEventListener("click", () =>
 			void this.playAudio(`ex-${word.id}`, null),
 		);
@@ -306,7 +306,7 @@ export class DagensOrdView extends ItemView {
 		const starBtn = actions.createEl("button", {
 			cls: `do-btn do-btn-action${store.isStarred(word.id) ? " active" : ""}`,
 		});
-		starBtn.innerHTML = `${store.isStarred(word.id) ? "★" : "☆"} Star`;
+		starBtn.setText(`${store.isStarred(word.id) ? "★" : "☆"} Star`);
 		starBtn.addEventListener("click", () => {
 			store.toggleStarred(word.id);
 			this.render();
@@ -315,7 +315,7 @@ export class DagensOrdView extends ItemView {
 		const masterBtn = actions.createEl("button", {
 			cls: `do-btn do-btn-action${store.isMastered(word.id) ? " active" : ""}`,
 		});
-		masterBtn.innerHTML = `${store.isMastered(word.id) ? "✓" : "○"} Mastered`;
+		masterBtn.setText(`${store.isMastered(word.id) ? "✓" : "○"} Mastered`);
 		masterBtn.addEventListener("click", () => {
 			store.toggleMastered(word.id);
 			this.render();

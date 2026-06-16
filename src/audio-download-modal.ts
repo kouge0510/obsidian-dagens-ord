@@ -1,4 +1,4 @@
-import { App, Modal, Notice } from "obsidian";
+import { App, Modal, Notice, Setting } from "obsidian";
 import {
 	AudioDownloadCancelled,
 	AudioDownloader,
@@ -33,7 +33,7 @@ export class AudioDownloadModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl("h2", { text: "Download pronunciation audio" });
+		new Setting(contentEl).setName("Download pronunciation audio").setHeading();
 		contentEl.createEl("p", {
 			text:
 				"Some pronunciation audio files are missing on your device. " +
@@ -42,10 +42,6 @@ export class AudioDownloadModal extends Modal {
 		});
 
 		const buttons = contentEl.createDiv({ cls: "do-modal-buttons" });
-		buttons.style.display = "flex";
-		buttons.style.justifyContent = "flex-end";
-		buttons.style.gap = "8px";
-		buttons.style.marginTop = "16px";
 
 		const laterBtn = buttons.createEl("button", { text: "Not now" });
 		laterBtn.addEventListener("click", () => {
@@ -65,35 +61,18 @@ export class AudioDownloadModal extends Modal {
 		contentEl.empty();
 		this.downloading = true;
 
-		contentEl.createEl("h2", { text: "Downloading audio…" });
+		new Setting(contentEl).setName("Downloading audio…").setHeading();
 
 		const status = contentEl.createEl("p", {
 			text: "Fetching file list from GitHub…",
 		});
 
-		const barOuter = contentEl.createDiv();
-		barOuter.style.width = "100%";
-		barOuter.style.height = "10px";
-		barOuter.style.borderRadius = "5px";
-		barOuter.style.background = "var(--background-modifier-border)";
-		barOuter.style.overflow = "hidden";
-		barOuter.style.marginTop = "12px";
+		const barOuter = contentEl.createDiv({ cls: "do-progress-track" });
+		const barInner = barOuter.createDiv({ cls: "do-progress-fill" });
 
-		const barInner = barOuter.createDiv();
-		barInner.style.height = "100%";
-		barInner.style.width = "0%";
-		barInner.style.background = "var(--interactive-accent)";
-		barInner.style.transition = "width 0.1s linear";
+		const detail = contentEl.createEl("p", { cls: "setting-item-description" });
 
-		const detail = contentEl.createEl("p", {
-			cls: "setting-item-description",
-			text: "",
-		});
-
-		const buttons = contentEl.createDiv();
-		buttons.style.display = "flex";
-		buttons.style.justifyContent = "flex-end";
-		buttons.style.marginTop = "16px";
+		const buttons = contentEl.createDiv({ cls: "do-modal-buttons" });
 		const cancelBtn = buttons.createEl("button", { text: "Cancel" });
 		cancelBtn.addEventListener("click", () => {
 			this.downloader.cancel();
@@ -103,7 +82,7 @@ export class AudioDownloadModal extends Modal {
 
 		const onProgress = (p: DownloadProgress): void => {
 			const pct = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
-			barInner.style.width = `${pct}%`;
+			barInner.setCssStyles({ width: `${pct}%` });
 			status.setText(`Downloading audio… ${p.completed} / ${p.total} (${pct}%)`);
 			const failedText = p.failed > 0 ? ` • ${p.failed} failed` : "";
 			detail.setText(`${p.currentFile}${failedText}`);
@@ -112,7 +91,7 @@ export class AudioDownloadModal extends Modal {
 		try {
 			const result = await this.downloader.downloadAll(onProgress);
 			this.downloading = false;
-			barInner.style.width = "100%";
+			barInner.setCssStyles({ width: "100%" });
 			this.onComplete(result.failed === 0);
 			this.renderComplete(result);
 		} catch (err) {
@@ -141,46 +120,24 @@ export class AudioDownloadModal extends Modal {
 		const ok = result.failed === 0;
 		const downloaded = Math.max(0, result.completed - result.skipped - result.failed);
 
-		const header = contentEl.createDiv();
-		header.style.display = "flex";
-		header.style.alignItems = "center";
-		header.style.gap = "10px";
-
-		const badge = header.createDiv();
-		badge.style.width = "32px";
-		badge.style.height = "32px";
-		badge.style.borderRadius = "50%";
-		badge.style.display = "flex";
-		badge.style.alignItems = "center";
-		badge.style.justifyContent = "center";
-		badge.style.flexShrink = "0";
-		badge.style.color = "var(--text-on-accent)";
-		badge.style.background = ok
-			? "var(--interactive-accent)"
-			: "var(--background-modifier-error)";
-		badge.setText(ok ? "✓" : "!");
-		badge.style.fontWeight = "bold";
-
-		header.createEl("h2", {
-			text: ok ? "Audio download complete" : "Download finished with errors",
+		const header = contentEl.createDiv({ cls: "do-complete-header" });
+		const badge = header.createDiv({
+			cls: ok ? "do-complete-badge" : "do-complete-badge is-error",
+			text: ok ? "✓" : "!",
 		});
+		badge.setAttr("aria-hidden", "true");
+		new Setting(header)
+			.setName(ok ? "Audio download complete" : "Download finished with errors")
+			.setHeading();
 
-		const bar = contentEl.createDiv();
-		bar.style.width = "100%";
-		bar.style.height = "10px";
-		bar.style.borderRadius = "5px";
-		bar.style.marginTop = "12px";
-		bar.style.background = "var(--interactive-accent)";
+		contentEl.createDiv({ cls: "do-complete-bar" });
 
-		const list = contentEl.createEl("ul");
-		list.style.marginTop = "14px";
-		list.style.lineHeight = "1.7";
+		const list = contentEl.createEl("ul", { cls: "do-result-list" });
 		list.createEl("li", { text: `Total audio files: ${result.total}` });
 		list.createEl("li", { text: `Newly downloaded: ${downloaded}` });
 		list.createEl("li", { text: `Already present (skipped): ${result.skipped}` });
 		if (result.failed > 0) {
-			const failed = list.createEl("li", { text: `Failed: ${result.failed}` });
-			failed.style.color = "var(--text-error)";
+			list.createEl("li", { cls: "do-result-failed", text: `Failed: ${result.failed}` });
 		}
 
 		contentEl.createEl("p", {
@@ -190,11 +147,7 @@ export class AudioDownloadModal extends Modal {
 				: "Some files could not be downloaded. You can run the download again to retry the failed files.",
 		});
 
-		const buttons = contentEl.createDiv();
-		buttons.style.display = "flex";
-		buttons.style.justifyContent = "flex-end";
-		buttons.style.gap = "8px";
-		buttons.style.marginTop = "16px";
+		const buttons = contentEl.createDiv({ cls: "do-modal-buttons" });
 
 		if (result.failed > 0) {
 			const retryBtn = buttons.createEl("button", { text: "Retry failed" });

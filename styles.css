@@ -309,3 +309,67 @@
 	color: var(--text-accent);
 	background: rgba(var(--color-accent-rgb, 108, 99, 255), 0.12);
 }
+
+/* Audio download modal */
+.do-modal-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.do-progress-track {
+	width: 100%;
+	height: 10px;
+	border-radius: 5px;
+	background: var(--background-modifier-border);
+	overflow: hidden;
+	margin-top: 12px;
+}
+
+.do-progress-fill {
+	height: 100%;
+	width: 0;
+	background: var(--interactive-accent);
+	transition: width 0.1s linear;
+}
+
+.do-complete-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.do-complete-badge {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	font-weight: bold;
+	color: var(--text-on-accent);
+	background: var(--interactive-accent);
+}
+
+.do-complete-badge.is-error {
+	background: var(--background-modifier-error);
+}
+
+.do-complete-bar {
+	width: 100%;
+	height: 10px;
+	border-radius: 5px;
+	margin-top: 12px;
+	background: var(--interactive-accent);
+}
+
+.do-result-list {
+	margin-top: 14px;
+	line-height: 1.7;
+}
+
+.do-result-failed {
+	color: var(--text-error);
+}

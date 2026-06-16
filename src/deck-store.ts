@@ -171,7 +171,8 @@ export class DeckStore {
 		if (!(await this.app.vault.adapter.exists(path))) return;
 		try {
 			const raw = await this.app.vault.adapter.read(path);
-			this.progress = { ...this.progress, ...JSON.parse(raw) };
+			const parsed = JSON.parse(raw) as Partial<UserProgress>;
+			this.progress = { ...this.progress, ...parsed };
 		} catch {
 			// keep defaults
 		}

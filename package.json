@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-dagens-ord",
-	"version": "1.0.9",
+	"version": "1.0.10",
 	"description": "Learn a high-frequency Danish word each day, with pronunciation, example sentences, and English and Chinese translations.",
 	"main": "main.js",
 	"scripts": {
@@ -14,7 +14,6 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^20.11.0",
-		"builtin-modules": "^3.3.0",
 		"esbuild": "^0.20.0",
 		"obsidian": "latest",
 		"tslib": "^2.6.0",

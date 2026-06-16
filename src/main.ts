@@ -31,13 +31,13 @@ export default class DagensOrdPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: "open-dagens-ord",
+			id: "open",
 			name: "打开每日丹麦语",
 			callback: () => void this.openWithAudioCheck(),
 		});
 
 		this.addCommand({
-			id: "dagens-ord-today",
+			id: "today",
 			name: "跳转到今日单词",
 			callback: () => {
 				this.deckStore.goToToday(
@@ -49,7 +49,7 @@ export default class DagensOrdPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: "dagens-ord-download-audio",
+			id: "download-audio",
 			name: "下载发音音频 / Download pronunciation audio",
 			callback: () => this.openAudioDownloadModal(),
 		});
@@ -96,10 +96,6 @@ export default class DagensOrdPlugin extends Plugin {
 		return ok;
 	}
 
-	onunload(): void {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE);
-	}
-
 	async loadSettings(): Promise<void> {
 		const saved = (await this.loadData()) as Partial<DagensOrdSettings> | null;
 		this.settings = { ...DEFAULT_SETTINGS, ...saved };
@@ -144,6 +140,6 @@ export default class DagensOrdPlugin extends Plugin {
 			leaf = rightLeaf;
 		}
 
-		workspace.revealLeaf(leaf);
+		await workspace.revealLeaf(leaf);
 	}
 }
