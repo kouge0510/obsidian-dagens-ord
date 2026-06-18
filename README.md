@@ -91,4 +91,4 @@ npm run build     # Build main.js (bundles data/deck.json)
 
 This plugin was inspired by [ankidkdeck v2.0](https://github.com/iskoldt-X/ankidkdeck/releases/tag/v2.0) ([iskoldt-X/ankidkdeck](https://github.com/iskoldt-X/ankidkdeck)).
 
-Thanks to [Yifan Huang](https://github.com/Ploverrrr) for their help.
+Thanks to [Yifan Huang](https://github.com/Ploverrrr) for her help.
