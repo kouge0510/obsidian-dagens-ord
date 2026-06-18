@@ -15,8 +15,6 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName("General").setHeading();
-
 		containerEl.createEl("p", {
 			cls: "setting-item-description",
 			text: "Word audio comes from the built-in Anki deck. Example audio is generated locally via edge-tts (no API key required).",

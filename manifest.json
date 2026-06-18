@@ -1,7 +1,7 @@
 {
 	"id": "dagens-ord",
 	"name": "Dagens Ord",
-	"version": "1.0.11",
+	"version": "1.0.12",
 	"minAppVersion": "1.7.2",
 	"description": "Learn a high-frequency Danish word each day, with pronunciation, example sentences, and English and Chinese translations.",
 	"author": "Shuyang Liu and Yifan Huang",
