@@ -8,10 +8,14 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
+		this.refresh();
+	}
+
+	private refresh(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName("Dagens Ord settings").setHeading();
+		new Setting(containerEl).setName("General").setHeading();
 
 		containerEl.createEl("p", {
 			cls: "setting-item-description",
@@ -35,7 +39,7 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 								this.plugin.settings.dailyCefrLevels,
 							);
 							this.plugin.refreshView();
-							this.display();
+							this.refresh();
 						}
 					}),
 			);
@@ -125,6 +129,6 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 			this.plugin.settings.dailyCefrLevels,
 		);
 		this.plugin.refreshView();
-		this.display();
+		this.refresh();
 	}
 }

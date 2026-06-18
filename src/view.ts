@@ -191,7 +191,7 @@ export class DagensOrdView extends ItemView {
 		const section = card.createDiv({ cls: "do-word-section" });
 
 		const wordRow = section.createDiv({ cls: "do-word-row" });
-		const wordEl = wordRow.createEl("h1", { cls: "do-word", text: word.word });
+		wordRow.createEl("h1", { cls: "do-word", text: word.word });
 
 		const playBtn = wordRow.createEl("button", {
 			cls: "do-play-btn",
@@ -255,12 +255,14 @@ export class DagensOrdView extends ItemView {
 			text: formatPlaybackRate(this.plugin.settings.playbackRate),
 			attr: { "aria-label": "切换播放速度" },
 		});
-		button.addEventListener("click", async () => {
-			const nextRate = nextPlaybackRate(this.plugin.settings.playbackRate);
-			this.plugin.settings.playbackRate = nextRate;
-			if (this.audio) this.audio.playbackRate = nextRate;
-			button.setText(formatPlaybackRate(nextRate));
-			await this.plugin.saveSettings();
+		button.addEventListener("click", () => {
+			void (async () => {
+				const nextRate = nextPlaybackRate(this.plugin.settings.playbackRate);
+				this.plugin.settings.playbackRate = nextRate;
+				if (this.audio) this.audio.playbackRate = nextRate;
+				button.setText(formatPlaybackRate(nextRate));
+				await this.plugin.saveSettings();
+			})();
 		});
 	}
 

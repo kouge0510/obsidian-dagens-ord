@@ -1,4 +1,3 @@
-import { FileSystemAdapter } from "obsidian";
 import type { App } from "obsidian";
 
 export interface AudioResult {
