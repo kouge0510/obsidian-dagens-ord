@@ -1,6 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type DagensOrdPlugin from "./main";
-import { CEFR_LEVELS, type CefrLevel } from "./types";
+import { CEFR_LEVELS, type CardDisplayMode, type CefrLevel } from "./types";
 
 export class DagensOrdSettingTab extends PluginSettingTab {
 	constructor(app: App, private plugin: DagensOrdPlugin) {
@@ -19,6 +19,22 @@ export class DagensOrdSettingTab extends PluginSettingTab {
 			cls: "setting-item-description",
 			text: "Word audio comes from the built-in Anki deck. Example audio is generated locally via edge-tts (no API key required).",
 		});
+
+		new Setting(containerEl)
+			.setName("Card display location")
+			.setDesc("Choose whether the daily word card opens in the right sidebar or as a draggable card over the editor.")
+			.addDropdown((dropdown) =>
+				dropdown
+					.addOption("sidebar", "Right sidebar")
+					.addOption("floating", "Editor floating card")
+					.setValue(this.plugin.settings.cardDisplayMode)
+					.onChange((value) => {
+						void (async () => {
+							await this.plugin.setCardDisplayMode(value as CardDisplayMode);
+							this.refresh();
+						})();
+					}),
+			);
 
 		new Setting(containerEl)
 			.setName("Daily word pool size")

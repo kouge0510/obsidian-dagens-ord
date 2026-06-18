@@ -1,12 +1,18 @@
 import { Plugin } from "obsidian";
-import deckJson from "../data/deck.json";
+import * as deckJson from "../data/deck.json";
 import { AudioDownloader } from "./audio-downloader";
 import { AudioDownloadModal } from "./audio-download-modal";
 import { DeckStore } from "./deck-store";
+import { FloatingCardController } from "./floating-card";
 import { LocalAudio } from "./local-audio";
 import { normalizePlaybackRate } from "./playback-speed";
 import { DagensOrdSettingTab } from "./settings";
-import { DEFAULT_SETTINGS, type DagensOrdSettings, CEFR_LEVELS } from "./types";
+import {
+	DEFAULT_SETTINGS,
+	type CardDisplayMode,
+	type DagensOrdSettings,
+	CEFR_LEVELS,
+} from "./types";
 import { DagensOrdView, VIEW_TYPE } from "./view";
 
 export default class DagensOrdPlugin extends Plugin {
@@ -15,6 +21,7 @@ export default class DagensOrdPlugin extends Plugin {
 	audio!: LocalAudio;
 	audioDownloader!: AudioDownloader;
 	private audioModalOpen = false;
+	private floatingCard: FloatingCardController | null = null;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -44,7 +51,7 @@ export default class DagensOrdPlugin extends Plugin {
 					this.settings.dailyWordCount,
 					this.settings.dailyCefrLevels,
 				);
-				void this.activateView();
+				void this.openCurrentDisplay();
 			},
 		});
 
@@ -55,6 +62,14 @@ export default class DagensOrdPlugin extends Plugin {
 		});
 
 		this.addSettingTab(new DagensOrdSettingTab(this.app, this));
+		if (this.settings.cardDisplayMode === "floating") {
+			await this.syncCardDisplayMode();
+		}
+	}
+
+	onunload(): void {
+		this.floatingCard?.destroy();
+		this.floatingCard = null;
 	}
 
 	openAudioDownloadModal(): void {
@@ -73,7 +88,7 @@ export default class DagensOrdPlugin extends Plugin {
 		if (!ok) {
 			this.openAudioDownloadModal();
 		}
-		await this.activateView();
+		await this.openCurrentDisplay();
 	}
 
 	/**
@@ -115,6 +130,18 @@ export default class DagensOrdPlugin extends Plugin {
 			}
 		}
 		this.settings.playbackRate = normalizePlaybackRate(this.settings.playbackRate);
+		if (this.settings.cardDisplayMode !== "sidebar" && this.settings.cardDisplayMode !== "floating") {
+			this.settings.cardDisplayMode = DEFAULT_SETTINGS.cardDisplayMode;
+		}
+		if (
+			!this.settings.floatingCardPosition
+			|| typeof this.settings.floatingCardPosition.left !== "number"
+			|| typeof this.settings.floatingCardPosition.top !== "number"
+		) {
+			this.settings.floatingCardPosition = {
+				...DEFAULT_SETTINGS.floatingCardPosition,
+			};
+		}
 	}
 
 	async saveSettings(): Promise<void> {
@@ -127,6 +154,31 @@ export default class DagensOrdPlugin extends Plugin {
 			const view = leaf.view;
 			if (view instanceof DagensOrdView) view.render();
 		}
+		this.refreshFloatingCard();
+	}
+
+	async setCardDisplayMode(mode: CardDisplayMode): Promise<void> {
+		this.settings.cardDisplayMode = mode;
+		this.settings.floatingCardHidden = false;
+		await this.saveSettings();
+		await this.syncCardDisplayMode();
+	}
+
+	async syncCardDisplayMode(): Promise<void> {
+		if (this.settings.cardDisplayMode === "floating") {
+			this.closeSidebarViews();
+			this.ensureFloatingCard().sync();
+			return;
+		}
+
+		this.floatingCard?.destroy();
+		this.floatingCard = null;
+		await this.activateView();
+	}
+
+	refreshFloatingCard(): void {
+		if (this.settings.cardDisplayMode !== "floating") return;
+		this.ensureFloatingCard().sync();
 	}
 
 	private async activateView(): Promise<void> {
@@ -141,5 +193,29 @@ export default class DagensOrdPlugin extends Plugin {
 		}
 
 		await workspace.revealLeaf(leaf);
+	}
+
+	private async openCurrentDisplay(): Promise<void> {
+		if (this.settings.cardDisplayMode === "floating") {
+			this.closeSidebarViews();
+			this.ensureFloatingCard().sync();
+			return;
+		}
+
+		await this.activateView();
+	}
+
+	private ensureFloatingCard(): FloatingCardController {
+		if (!this.floatingCard) {
+			this.floatingCard = new FloatingCardController(this);
+		}
+		return this.floatingCard;
+	}
+
+	private closeSidebarViews(): void {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+		for (const leaf of leaves) {
+			void leaf.detach();
+		}
 	}
 }

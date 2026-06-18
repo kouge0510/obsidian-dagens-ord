@@ -17,6 +17,7 @@ An Obsidian plugin built on the Anki Danish frequency deck (DDO Danish Frequency
 - **Example audio**: generated locally via `edge-tts`
 - **On-demand audio download**: audio is no longer bundled in the release. On first use the plugin checks your local audio and offers to download the files from GitHub
 - **CEFR filter**: toggle A1–C2 levels individually in settings
+- **Flexible card location**: show the daily word card in the right sidebar or as a draggable floating card over the editor
 - Dark theme aligned with Obsidian's default dark UI
 - Progress saved locally
 
@@ -38,6 +39,8 @@ To keep the release small, audio files are **not** bundled. They are hosted in t
 ## Usage
 
 - Click the ![languages](docs/ribbon-icon.png) icon in the ribbon, or run **Open daily Danish** from the command palette
+- In Settings → **Card display location**, choose **Right sidebar** or **Editor floating card**
+- In floating-card mode, drag the card to your preferred position. Use **Hide** to collapse it into a small **Open** button, then click **Open** to restore it
 - Word play button: plays the Danish pronunciation
 - Example play button: plays the locally generated example audio (downloaded via the step above)
 
